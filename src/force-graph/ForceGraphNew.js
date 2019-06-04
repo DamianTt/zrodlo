@@ -11,41 +11,44 @@ class ForceGraphNew extends Component {
     }
 
     componentDidMount() {
-
-        var numNodes = 30;
+        const { data } = this.props;
 
         this.nodeArray = [];
         this.linkArray = [];
 
-        for (let i = 0; i < numNodes; i++) {
+        data.forEach(node => {
             this.nodeArray.push(
                 {
-                    radius: this.radius,
-                    //fx: i * 7,
-                    //fy: i % 2 === 0 ? 50 : 100
+                    id: node.id,
+                    title: node.title
                 }
             );
-            this.linkArray.push(
-                { source: i, target: i !== numNodes - 1 ? i + 1 : 0 }
-            )
-        }
+            if (node.parent) {
+                this.linkArray.push(
+                    { source: node.id, target: node.parent }
+                )
+            }
+        });
 
-        this.simulation = d3.forceSimulation(this.nodeArray)
+        this.simulation = d3.forceSimulation()
             .force('charge', d3.forceManyBody().strength(-1 * 10 * this.radius)) // makes the elements repel each other. .strength(-20) positive value will cause elements to attract one another while a negative value causes elements to repel The default value is -30
             .force('center', d3.forceCenter(this.width / 2, this.height / 2)) // attracts the elements towards a centre point
-            .force('collision', d3.forceCollide().radius(function (d) {
-                return d.radius
-            }))
-            .force('link', d3.forceLink().links(this.linkArray))
+            .force('collision', d3.forceCollide(this.radius))
+            .force("link", d3.forceLink().id(function(d) { return d.id; }))
             .on('tick', this.ticked); // Each time the simulation iterates the function ticked will be called.
+
+        this.simulation.nodes(this.nodeArray);
+        this.simulation.force("link").links(this.linkArray);
 
         var u = d3.select(this.nodesElement)
             .selectAll('.node')
             .data(this.nodeArray)
             .enter()
-            .append('circle')
+            .append('rect')
             .attr('class', 'node')
-            .attr('r', this.radius)
+            .attr('width', this.radius * 2)
+            .attr('height', this.radius)
+            .attr('rx', 15)
             .call(d3.drag()
                 .on("start", this.dragstarted)
                 .on("drag", this.dragged)
@@ -67,11 +70,11 @@ class ForceGraphNew extends Component {
 
     ticked = () => {
         d3.select(this.nodesElement)
-            .selectAll('.node').attr('cx', function (d) {
-                return d.x
+            .selectAll('.node').attr('x', (d) => {
+                return d.x - this.radius
             })
-            .attr('cy', function (d) {
-                return d.y
+            .attr('y', (d) => {
+                return d.y - this.radius / 2
             });
 
         d3.select(this.linksElement)
