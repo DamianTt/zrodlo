@@ -7,7 +7,9 @@ class ForceGraphNew extends Component {
         super(props);
         this.width = 1080;
         this.height = 540;
-        this.radius = 50;
+        this.radius = 100;
+        this.padding = 16;
+        this.titleFontSize = 12;
     }
 
     componentDidMount() {
@@ -33,28 +35,39 @@ class ForceGraphNew extends Component {
         this.simulation = d3.forceSimulation()
             .force('charge', d3.forceManyBody().strength(-1 * 10 * this.radius)) // makes the elements repel each other. .strength(-20) positive value will cause elements to attract one another while a negative value causes elements to repel The default value is -30
             .force('center', d3.forceCenter(this.width / 2, this.height / 2)) // attracts the elements towards a centre point
-            .force('collision', d3.forceCollide(this.radius))
-            .force("link", d3.forceLink().id(function(d) { return d.id; }))
+            .force('collision', d3.forceCollide(this.radius + this.padding))
+            .force("link", d3.forceLink().id(function (d) { return d.id; }))
             .on('tick', this.ticked); // Each time the simulation iterates the function ticked will be called.
 
         this.simulation.nodes(this.nodeArray);
         this.simulation.force("link").links(this.linkArray);
 
-        var u = d3.select(this.nodesElement)
-            .selectAll('.node')
+        var d3nodesElement = d3.select(this.nodesElement)
+            .selectAll('.node-container')
             .data(this.nodeArray)
             .enter()
-            .append('rect')
-            .attr('class', 'node')
-            .attr('width', this.radius * 2)
-            .attr('height', this.radius)
-            .attr('rx', 15)
+            .append('g')
+            .attr('class', 'node-container')
             .call(d3.drag()
                 .on("start", this.dragstarted)
                 .on("drag", this.dragged)
                 .on("end", this.dragended)
             );
-        u.exit().remove();
+        d3nodesElement.exit().remove();
+
+        d3nodesElement.append('rect')
+            .attr('class', 'node-box')
+            .attr('width', this.radius * 2)
+            .attr('height', this.radius)
+            .attr('rx', 15)
+
+        d3nodesElement.append('text')
+            .attr('class', 'node-title')
+            .attr('dy', this.titleFontSize + 8)
+            .attr('dx', 8)
+            .attr('font-size', this.titleFontSize)
+            .text(function(d) { return d.title; });
+
 
         var v = d3.select(this.linksElement)
             .selectAll('.line')
@@ -70,11 +83,8 @@ class ForceGraphNew extends Component {
 
     ticked = () => {
         d3.select(this.nodesElement)
-            .selectAll('.node').attr('x', (d) => {
-                return d.x - this.radius
-            })
-            .attr('y', (d) => {
-                return d.y - this.radius / 2
+            .selectAll('.node-container').attr('transform', (d) => {
+                return `translate(${d.x - this.radius},${d.y - this.radius / 2})`
             });
 
         d3.select(this.linksElement)
