@@ -2,11 +2,16 @@
     border: 2px solid #245d52;
     border-radius: 10px;
 }
+.node-container {
+    .node-box {
+        fill: #c5ebed;
+    }
 
-.node-box {
-    fill: #c5ebed;
+    .add-node {
+        fill: #912b94;
+    }
 }
 
-line {
+.line {
     stroke: #ccc;
 }

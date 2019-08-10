@@ -18,18 +18,18 @@ const data = [
     title: "Mój pod1-główny node"
   },
   {
-    id: 3,
+    id: 20,
     parent: 1,
     title: "Mój pod2-główny node"
   },
   {
     id: 4,
-    parent: 3,
+    parent: 20,
     title: "Mój pod1-pod2-główny node"
   },
   {
     id: 5,
-    parent: 3,
+    parent: 20,
     title: "Mój pod2-pod2-główny node"
   },
   {
@@ -61,6 +61,10 @@ const data = [
     id: 11,
     parent: 5,
     title: "Mój pod6-pod2-pod2-główny node"
+  },
+  {
+    id: 12,
+    title: "Node bez parenta"
   }
 ]
 

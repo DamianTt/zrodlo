@@ -3,10 +3,14 @@ import * as d3 from 'd3';
 import './ForceGraph.scss';
 
 class ForceGraphNew extends Component {
+
+    nodeArray = [];
+    linkArray = [];
+
     constructor(props) {
         super(props);
-        this.width = 1080;
-        this.height = 540;
+        this.width = 1440;
+        this.height = 900;
         this.radius = 100;
         this.padding = 16;
         this.titleFontSize = 12;
@@ -14,9 +18,6 @@ class ForceGraphNew extends Component {
 
     componentDidMount() {
         const { data } = this.props;
-
-        this.nodeArray = [];
-        this.linkArray = [];
 
         data.forEach(node => {
             this.nodeArray.push(
@@ -42,23 +43,36 @@ class ForceGraphNew extends Component {
         this.simulation.nodes(this.nodeArray);
         this.simulation.force("link").links(this.linkArray);
 
+        //add zoom capabilities 
+        d3.select(this.svgElement).call(d3.zoom().on("zoom", this.zoomed));
+
+        this.update();
+    }
+
+    update = () => {
         var d3nodesElement = d3.select(this.nodesElement)
             .selectAll('.node-container')
             .data(this.nodeArray)
-            .enter()
+
+        d3nodesElement.exit().remove();
+
+        d3nodesElement = d3nodesElement.enter()
             .append('g')
             .attr('class', 'node-container')
             .call(d3.drag()
                 .on("start", this.dragstarted)
                 .on("drag", this.dragged)
                 .on("end", this.dragended)
-            );
-        d3nodesElement.exit().remove();
+            )
+            .merge(d3nodesElement); // merge wykonuje się, aby wykonać dla nowych elementów .data(this.nodeArray)
 
+        // ## Node component - how to make it independent?
+        const nodeWidth = this.radius * 2;
+        const nodeHeight = this.radius * 0.7;
         d3nodesElement.append('rect')
             .attr('class', 'node-box')
-            .attr('width', this.radius * 2)
-            .attr('height', this.radius)
+            .attr('width', nodeWidth)
+            .attr('height', nodeHeight)
             .attr('rx', 15)
 
         d3nodesElement.append('text')
@@ -66,19 +80,55 @@ class ForceGraphNew extends Component {
             .attr('dy', this.titleFontSize + 8)
             .attr('dx', 8)
             .attr('font-size', this.titleFontSize)
-            .text(function(d) { return d.title; });
+            .text(function (d) { return d.title; });
 
+        d3nodesElement.append('svg')
+            .attr('class', 'add-node')
+            .attr('pointer-events', 'bounding-box')
+            .attr('viewBox', '0 0 24 24')
+            .attr('width', 24)
+            .attr('height', 24)
+            .attr('x', nodeWidth - 32)
+            .attr('y', nodeHeight - 32)
+            .on('mousedown', () => d3.event.stopPropagation())
+            .on('dblclick', () => d3.event.stopPropagation())
+            .on('click', (d) => {
+                d3.event.stopPropagation();
+                this.addChildNode(d.id);
+            })
+            .append('path')
+            .attr('d', 'M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm6 13h-5v5h-2v-5h-5v-2h5v-5h2v5h5v2z');
+        // ##
 
-        var v = d3.select(this.linksElement)
+        var d3linksElement = d3.select(this.linksElement)
             .selectAll('.line')
             .data(this.linkArray)
-            .enter()
+
+        d3linksElement.exit().remove();
+
+        d3linksElement = d3linksElement.enter()
             .append('line')
             .attr('class', 'line')
-        v.exit().remove()
+            .merge(d3linksElement);
 
-        //add zoom capabilities 
-        d3.select(this.svgElement).call(d3.zoom().on("zoom", this.zoomed));
+        // Update and restart the simulation.
+        this.simulation.nodes(this.nodeArray);
+        this.simulation.force("link").links(this.linkArray);
+        this.simulation.alpha(0.1).restart();
+    }
+
+    addChildNode = (parentId) => {
+        const newId = Math.ceil(Math.random() * (9999 - 100) + 100);
+        this.nodeArray.push({
+            id: newId,
+            title: "Nowy node"
+        });
+
+        this.linkArray.push(
+            { source: parentId, target: newId }
+        )
+
+        this.update();
     }
 
     ticked = () => {
@@ -115,6 +165,9 @@ class ForceGraphNew extends Component {
 
     dragended = (d) => {
         if (!d3.event.active) this.simulation.alphaTarget(0);
+        // Remove if you want fixed position
+        d.fx = null;
+        d.fy = null;
     }
 
     zoomed = () => {
